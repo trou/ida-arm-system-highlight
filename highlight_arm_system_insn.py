@@ -1388,7 +1388,7 @@ def backtrack_fields(ea, reg, fields):
         prev_mnem = print_insn_mnem(ea)[0:3]
         if prev_mnem in ("LDR", "MOV", "ORR", "BIC") and print_operand(ea, 0) == reg:
             if prev_mnem == "LDR" and print_operand(ea, 1)[0] == "=":
-                bits = extract_bits(fields, Dword(get_operand_value(ea, 1)))
+                bits = extract_bits(fields, get_wide_dword(get_operand_value(ea, 1)))
                 set_cmt(ea, "Set bits %s" % ", ".join([abbrev for (abbrev,name) in bits]), 0)
                 break
             elif prev_mnem == "MOV" and print_operand(ea, 1)[0] == "#":
@@ -1472,7 +1472,7 @@ def markup_aarch64_sys_insn(ea):
         reg_pos = 4
         access = '>'
     base_args = (reg_pos + 1) % 5
-    op0 = 2 + ((Dword(ea) >> 19) & 1)
+    op0 = 2 + ((get_wide_dword(ea) >> 19) & 1)
     op1, op2 = get_operand_value(ea, base_args), get_operand_value(ea, base_args + 3)
     crn, crm = print_operand(ea, base_args + 1), print_operand(ea, base_args + 2)
     reg = print_operand(ea, reg_pos)
@@ -1516,6 +1516,7 @@ def markup_system_insn(ea):
         markup_pstate_insn(ea)
     elif current_arch == 'aarch64' and mnem[0:3] in ("MSR", "MRS"):
         markup_aarch64_sys_insn(ea)
+    set_color(ea, CIC_ITEM, 0x00000000) # Black background, adjust to your own theme
 
 def current_arch_size():
     _, t, _ = parse_decl("void *", 0)
@@ -1530,8 +1531,8 @@ def run_script():
 #
 # Check we are running this script on an ARM architecture.
 #
-if get_inf_attr(INF_PROCNAME) != 'ARM':
-    Warning("This script can only work with ARM and AArch64 architectures.")
-else:
+if get_inf_attr(INF_PROCNAME) in ('ARM', 'ARMB'):
     current_arch = 'aarch64' if current_arch_size() == 64 else 'aarch32'
     run_script()
+else:
+    Warning("This script can only work with ARM and AArch64 architectures.")
